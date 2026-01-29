@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 # connect to mongo atlas
-mongo_url = os.getenv("MONGO_URL")
+mongo_url = "mongodb+srv://sekhar:sekhar@cluster0.jyrocxs.mongodb.net/?appName=Cluster0"
 client = MongoClient(mongo_url)
 db = client.github_events
 collection = db.logs
