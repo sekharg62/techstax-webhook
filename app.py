@@ -62,11 +62,23 @@ def parse_event(event_type, payload):
 @app.route("/webhook", methods=["POST"])
 def webhook():
     event_type = request.headers.get("X-GitHub-Event")
+    
+    print("===== WEBHOOK RECEIVED =====")
+    print("EVENT:", event_type)
+    print("PAYLOAD:", request.json)
+    print("=====================================")
+    
     payload = request.json
 
     data = parse_event(event_type, payload)
+    print("PARSED DATA:", data)
+
     if data:
-        collection.insert_one(data)
+        try:
+            collection.insert_one(data)
+            print("DB INSERTED OK")
+        except Exception as e:
+            print("DB ERROR:", e)
 
     return jsonify({"status": "received"}), 200
 
