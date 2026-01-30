@@ -5,13 +5,17 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 app = Flask(__name__)
 CORS(app)
 
-# connect to mongo atlas
-mongo_url = "mongodb+srv://sekhar:sekhar@cluster0.jyrocxs.mongodb.net/?appName=Cluster0"
+mongo_url = os.getenv("MONGO_URL")
+#print("Loaded MONGO_URL:", mongo_url)  # Debug
+
+if not mongo_url:
+    raise RuntimeError("MONGO_URL environment variable is not set.")
 client = MongoClient(mongo_url)
 db = client.github_events
 collection = db.logs
@@ -62,23 +66,17 @@ def parse_event(event_type, payload):
 @app.route("/webhook", methods=["POST"])
 def webhook():
     event_type = request.headers.get("X-GitHub-Event")
-    
-    print("===== WEBHOOK RECEIVED =====")
-    print("EVENT:", event_type)
-    print("PAYLOAD:", request.json)
-    print("=====================================")
-    
-    payload = request.json
+    payload = request.get_json(silent=True)
+
+    app.logger.info(f"Received event: {event_type}")
 
     data = parse_event(event_type, payload)
-    print("PARSED DATA:", data)
-
     if data:
         try:
             collection.insert_one(data)
-            print("DB INSERTED OK")
-        except Exception as e:
-            print("DB ERROR:", e)
+            app.logger.info("Event inserted into DB")
+        except Exception:
+            app.logger.exception("Failed to insert event into DB")
 
     return jsonify({"status": "received"}), 200
 
